@@ -5,6 +5,7 @@ var axios = require("axios");
 var keys = require("./keys.js");
 var moment = require("moment");
 var Spotify = require("node-spotify-api");
+var fs = require("fs");
 
 var string = stringArgv();
 
@@ -36,7 +37,7 @@ switch(cmd) {
         OMDB();
         break;
     case "do-what-it-says":
-        console.log("do it: " + string);
+        random();
         break;
     default:
         console.log("That command doesn't exist.\nList of commands:\nconcert-this\nspotify-this-song\nmovie-this\ndo-what-it-says");
@@ -46,7 +47,6 @@ switch(cmd) {
 // concert-this
 function bandsInTown() {
     var bitkey = keys.BIT.key;
-    console.log(bitkey)
     var queryUrl = "http://rest.bandsintown.com/artists/" + string + "/events?app_id=" + bitkey;
     // get that json
     axios.get(queryUrl)
@@ -54,16 +54,19 @@ function bandsInTown() {
              // shorten res data
              var data = res.data;
              // print results
-             console.log("There are " + data.length + " venues found: ")
+             var stringData = [];
+             stringData.push("There are " + data.length + " venues found for " + string + ": ");
              data.forEach(function(data) {
-                 console.log("\n**********")
-                 console.log("Venue: " + data.venue.name);
-                 console.log("Location: " + data.venue.city + ", " + data.venue.region)
-                 console.log("Date: " + moment(data.datetime).format("MM/DD/YYYY"))
+                stringData.push("******************************");
+                stringData.push("Venue: " + data.venue.name);
+                stringData.push("Location: " + data.venue.city + ", " + data.venue.region);
+                stringData.push("Date: " + moment(data.datetime).format("MM/DD/YYYY"));
              })
+             var newString = stringData.join("\n\n");
+             log(newString);
          })
          .catch(function(err) {
-             if (err) throw err;
+             console.log(err)
          })
 }
 
@@ -74,23 +77,48 @@ function OMDB() {
     // get that json
     axios.get(queryUrl)
          .then(function(res) {
-             console.log("\n**************");
-             console.log("Title: " + res.data.Title)
-             console.log("Year Released: " + res.data.Year);
-             console.log("Produced in " + res.data.Country)
-             console.log("Languages: " + res.data.Language)
-             console.log("** Ratings  **")
-             console.log("IMDB: " + res.data.imdbRating);
              // find rotten tomatoes rating and print if found
+             var rtExists = false;
+             var index = 0;
              for (var i = 0; i < res.data.Ratings.length; i++) {
                  if (res.data.Ratings[i].Source === "Rotten Tomatoes") {
-                    console.log("Rotten Tomatoes: " + res.data.Ratings[i].Value)
+                    index = i;
+                    rtExists = true;
                  }
+             } 
+             if (rtExists) {
+                var stringData = [
+                    "******************************",
+                    "Title: " + res.data.Title,
+                    "Year Released: " + res.data.Year,
+                    "Produced in " + res.data.Country,
+                    "Languages: " + res.data.Language,
+                    "***** Ratings",
+                    "IMDB: " + res.data.imdbRating,
+                    "Rotten Tomatoes: " + res.data.Ratings[index].Value,
+                    "***** Plot",
+                    res.data.Plot,
+                    "***** Starring",
+                    res.data.Actors
+                 ].join("\n\n");
+                 log(stringData)
              }
-             console.log("** Plot     **");
-             console.log(res.data.Plot);
-             console.log("** Starring **");
-             console.log(res.data.Actors);
+             else {
+                var stringData = [
+                    "******************************",
+                    "Title: " + res.data.Title,
+                    "Year Released: " + res.data.Year,
+                    "Produced in " + res.data.Country,
+                    "Languages: " + res.data.Language,
+                    "***** Ratings",
+                    "IMDB: " + res.data.imdbRating,
+                    "***** Plot",
+                    res.data.Plot,
+                    "***** Starring",
+                    res.data.Actors
+                ].join("\n\n");
+                log(stringData)
+             }
          })
          .catch(function(err) {
              if (err) throw err;
@@ -112,7 +140,6 @@ function spotify() {
             console.log("Can't find a song called " + string)
         } else {
             var trackData = res.tracks.items[0];
-            console.log("******************************")
             var artists = "";
             for (var i = 0; i < trackData.artists.length; i++) {
                 if (i === trackData.artists.length - 1) {
@@ -121,14 +148,52 @@ function spotify() {
                     artists += trackData.artists[i].name + ", ";
                 }
             }
-            console.log("Artist(s): " + artists);
-            console.log("Album: " + trackData.album.name)
-            console.log("Song Name: " + trackData.name);
-            console.log("Preview Link: " + trackData.preview_url)
+            var stringData = [
+                "******************************",
+                "Artist(s): " + artists,
+                "Album: " + trackData.album.name,
+                "Song Name: " + trackData.name,
+                "Preview Link: " + trackData.preview_url,
+            ].join("\n\n");
+            log(stringData);
         }
-
 
     }).catch(function(err) {
         if (err) throw err;
     })
+}
+
+// do-what-its-says
+function random() {
+    // read from random.txt
+    fs.readFile("random.txt", "utf8", function(error, data) {
+        if (error) throw error;
+        var dataArray = data.split("\r\n");
+        
+        // get some random numbers
+        var randomIndex = Math.floor(Math.random() * dataArray.length);
+        var randomFunction = Math.floor(Math.random() * 3) + 1;
+
+        // set string
+        string = dataArray[randomIndex];
+
+        // now pick a random function to run
+        switch (randomFunction) {
+            case 1:
+                spotify();
+                break;
+            case 2:
+                bandsInTown();
+                break;
+            case 3:
+                OMDB();
+        }
+    })
+}
+// console.log and write in 1!
+function log(string) {
+    console.log(string);
+    fs.appendFile("log.txt", string + "\n\n", function(err) {
+        if (err) throw err;
+    });
 }
