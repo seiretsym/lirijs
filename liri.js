@@ -27,7 +27,7 @@ var cmd = process.argv[2];
 // create a command case
 switch(cmd) {
     case "concert-this":
-        console.log("bit: " + string);
+        bandsInTown();
         break;
     case "spotify-this-song":
         console.log("spotify: " + string);
@@ -38,7 +38,27 @@ switch(cmd) {
     case "do-what-it-says":
         console.log("do it: " + string);
         break;
-    case default:
+    default:
         console.log("That command doesn't exist.\nList of commands:\nconcert-this\nspotify-this-song\nmovie-this\ndo-what-it-says");
         break;
+}
+
+// concert-this
+function bandsInTown() {
+    var key = keys.BIT;
+    var queryUrl = "http://rest.bandsintown.com/artists/" + string + "/events?app_id=" + key;
+    axios.get(queryUrl)
+         .then(function(res) {
+             var data = res.data;
+             console.log("There are " + data.length + " venues found: ")
+             data.forEach(function(data) {
+                 console.log("\n**********")
+                 console.log("Venue: " + data.venue.name);
+                 console.log("Location: " + data.venue.city + ", " + data.venue.region)
+                 console.log("Date: " + moment(data.datetime).format("MM/DD/YYYY"))
+             })
+         })
+         .catch(function(err) {
+             if (err) throw err;
+         })
 }
