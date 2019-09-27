@@ -33,7 +33,7 @@ A program written in javascript to run on node. It captures the users command li
 - Learned to retrieve data from Callback APIs with Axios
 
 ## Demo Video
-Demo: https://github.com/seiretsym/lirijs/blob/master/demo.flv?raw=true
+Demo: https://www.youtube.com/watch?v=n6ioy2FW3mw
 
 ## Code Snippets
 This snippet is the function written to make an api request to `Bands In Town's Rest API` and parse certain information from the response retrieved with `Axios`
